@@ -43,9 +43,8 @@ impl<A: ControlModifier, B: ControlModifier, C: ControlModifier, D: ControlModif
     }
 }
 
-impl<Attribute: ControlAttr> ControlModifier for Attribute {
+impl<Attribute: 'static+ControlAttr+Clone> ControlModifier for Attribute {
     fn modify(self, control: &mut Control) {
-        unimplemented!()
-        // control.set_attribute(self)
+        control.set_attribute(self)
     }
 }
