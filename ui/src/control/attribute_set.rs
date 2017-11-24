@@ -45,6 +45,13 @@ impl AttributeSet {
     }
 }
 
+impl PartialEq for AttributeSet {
+    fn eq(&self, rhs: &AttributeSet) -> bool {
+        // TODO: implement me
+        unimplemented!()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
