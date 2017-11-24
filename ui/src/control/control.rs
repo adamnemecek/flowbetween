@@ -1,5 +1,5 @@
 use super::types::*;
-use super::attributes::*;
+use super::old_attributes::*;
 
 use super::super::canvas;
 use super::super::diff::*;

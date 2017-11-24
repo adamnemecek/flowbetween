@@ -4,8 +4,8 @@ mod bounds;
 mod actions;
 mod control;
 mod position;
-mod attributes;
 mod attribute_set;
+mod old_attributes;
 mod control_attribute;
 
 pub use self::json::*;
@@ -14,8 +14,8 @@ pub use self::bounds::*;
 pub use self::actions::*;
 pub use self::control::*;
 pub use self::position::*;
-pub use self::attributes::*;
 pub use self::attribute_set::*;
+pub use self::old_attributes::*;
 pub use self::control_attribute::*;
 
 #[cfg(test)]
