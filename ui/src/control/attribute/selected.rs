@@ -5,6 +5,6 @@ use super::super::control_attribute::*;
 /// Attribute representing whether or not this control is selected
 /// 
 #[derive(Clone, PartialEq)]
-pub struct Controller(pub Property);
+pub struct Selected(pub Property);
 
-impl ControlAttr for Controller { }
+impl ControlAttr for Selected { }
