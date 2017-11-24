@@ -1,12 +1,14 @@
 use super::types::*;
-use super::old_attributes::*;
+use super::modifier::*;
+use super::attribute_set::*;
+use super::control_attribute::*;
+use super::attribute;
 
 use super::super::canvas;
 use super::super::diff::*;
 use super::super::resource_manager::*;
 
 use ControlType::*;
-use ControlAttribute::*;
 
 ///
 /// Represents a control
@@ -14,7 +16,7 @@ use ControlAttribute::*;
 #[derive(Clone, PartialEq)]
 pub struct Control {
     /// Attributes for this control
-    attributes: Vec<ControlAttribute>,
+    attributes: AttributeSet,
 
     /// Type of this control
     control_type: ControlType
@@ -23,7 +25,7 @@ pub struct Control {
 impl Control {
     /// Creates a new control of a particular type
     pub fn new(control_type: ControlType) -> Control {
-        Control { attributes: vec![], control_type: control_type }
+        Control { attributes: AttributeSet::new(), control_type: control_type }
     }
 
     /// Creates a new container control
@@ -51,24 +53,22 @@ impl Control {
         Self::new(ControlType::Canvas)
     }
 
-    /// Creates a control with some attributes added to it
-    pub fn with<T: ToControlAttributes>(&self, attributes: T) -> Control {
-        let mut new_attributes = self.attributes.clone();
-        new_attributes.append(&mut attributes.attributes());
+    /// Sets (or updates) an attribute within this control
+    pub fn set_attribute<T: 'static+ControlAttr+Clone>(&mut self, attribute: T) {
+        self.attributes.set(attribute);
+    }
 
-        Control { attributes: new_attributes, control_type: self.control_type }
+    /// Creates a control with some attributes added to it
+    pub fn with<T: ControlModifier>(self, modifier: T) -> Control {
+        modifier.modify(&mut self);
+        self
     }
 
     ///
     /// Creates a control with an added controller
     ///
     pub fn with_controller(&self, controller: &str) -> Control {
-        self.with(ControlAttribute::Controller(String::from(controller)))
-    }
-
-    /// Returns an iterator over the attributes for this control
-    pub fn attributes<'a>(&'a self) -> Box<Iterator<Item=&'a ControlAttribute>+'a> {
-        Box::new(self.attributes.iter())
+        self.with(attribute::Controller(String::from(controller)))
     }
 
     /// The type of this control
@@ -80,39 +80,45 @@ impl Control {
     /// True if any of the attributes of this control exactly match the specified attribute
     /// (using the rules of is_different_flat, so no recursion when there are subcomponents)
     ///
-    pub fn has_attribute_flat(&self, attr: &ControlAttribute) -> bool {
+    pub fn has_attribute_flat<Attribute: ControlAttr>(&self, attr: &Attribute) -> bool {
+        unimplemented!()
+        /*
         self.attributes.iter()
             .any(|test_attr| !test_attr.is_different_flat(attr))
+        */
     }
 
     ///
     /// If this control has a controller attribute, finds it
     ///
     pub fn controller<'a>(&'a self) -> Option<&'a str> {
-        self.attributes.iter()
-            .map(|attr| attr.controller())
-            .find(|attr| attr.is_some())
-            .map(|attr| attr.unwrap())
+        if let Some(&attribute::Controller(ref controller)) = self.attributes.get() {
+            Some(&*controller)
+        } else {
+            None
+        }
     }
 
     ///
     /// If this control has a controller attribute, finds it
     ///
     pub fn subcomponents<'a>(&'a self) -> Option<&'a Vec<Control>> {
-        self.attributes.iter()
-            .map(|attr| attr.subcomponents())
-            .find(|attr| attr.is_some())
-            .map(|attr| attr.unwrap())
+        if let Some(subcomponents) = self.attributes.get::<Vec<Control>>() {
+            Some(subcomponents)
+        } else {
+            None
+        }
     }
 
     ///
     /// If this control has a canvas attribute, finds it
     ///
     pub fn canvas_resource<'a>(&'a self) -> Option<&Resource<canvas::Canvas>> {
-        self.attributes.iter()
-            .map(|attr| attr.canvas())
-            .find(|attr| attr.is_some())
-            .map(|attr| attr.unwrap())
+        if let Some(canvas) = self.attributes.get::<Resource<canvas::Canvas>>() {
+            Some(canvas)
+        } else {
+            None
+        }
     }
 
     ///
@@ -151,48 +157,41 @@ impl Control {
         // Map this control
         let mut new_control = map_fn(self);
 
-        // Map any subcomponents that might exist
-        let num_attributes = new_control.attributes.len();
-        for index in 0..num_attributes {
-            // TODO: we really only want to update the attribute if 
-            // it's a subcomponents attribute but we end up with an 
-            // awkward code structure as there's no elegant way to 
-            // release the borrow caused by the subcomponents ref in 
-            // the if statement here before updating the value. This 
-            // construction looks better but clones all the attributes
-            // to leave them unupdated
-            new_control.attributes[index] =
-                if let SubComponents(ref subcomponents) = new_control.attributes[index] {
-                    // Map each of the subcomponents
-                    let mut new_subcomponents = vec![];
+        // Map the subcomponents of this control
+        if let Some(subcomponents) = self.attributes.get::<Vec<Control>>() {
+            // This control has subcomponents: map them and add them to the new control
+            let new_subcomponents = vec![];
 
-                    for component in subcomponents.iter() {
-                        new_subcomponents.push(component.map(map_fn));
-                    }
+            for component in subcomponents.iter() {
+                new_subcomponents.push(component.map(map_fn));
+            }
 
-                    ControlAttribute::SubComponents(new_subcomponents)
-                } else {
-                    // Attribute remains the same
-                    new_control.attributes[index].clone()
-                };
+            new_control.with(new_subcomponents)
+        } else {
+            // No subcomponents: just return the mapped control
+            new_control
         }
-
-        new_control
     }
 }
 
 impl DiffableTree for Control {
     fn child_nodes<'a>(&'a self) -> Vec<&'a Self> {
+        unimplemented!()
+        /*
         self.attributes
             .iter()
             .map(|attr| attr.subcomponents().map(|component| component.iter()))
             .filter(|maybe_components| maybe_components.is_some())
             .flat_map(|components| components.unwrap())
             .collect()
+            */
     }
 
     fn is_different(&self, compare_to: &Self) -> bool {
+        unimplemented!()
+        /*
         self.control_type() != compare_to.control_type()
             || self.attributes.iter().any(|attr| !compare_to.has_attribute_flat(attr))
+        */
     }
 }
