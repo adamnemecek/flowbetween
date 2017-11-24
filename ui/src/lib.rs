@@ -5,6 +5,7 @@ extern crate serde_json;
 extern crate serde;
 extern crate futures;
 extern crate binding;
+extern crate typemap;
 extern crate desync;
 
 pub mod json;
