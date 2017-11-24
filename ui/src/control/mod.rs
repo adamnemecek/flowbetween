@@ -4,6 +4,7 @@ mod bounds;
 mod actions;
 mod control;
 mod position;
+pub mod attribute;
 mod attribute_set;
 mod old_attributes;
 mod control_attribute;
