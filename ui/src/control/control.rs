@@ -53,6 +53,10 @@ impl Control {
         Self::new(ControlType::Canvas)
     }
 
+    pub fn get_attribute<'a, T: 'static+ControlAttr+Clone>(&'a mut self) -> Option<&'a T> {
+        self.attributes.get()
+    }
+
     /// Sets (or updates) an attribute within this control
     pub fn set_attribute<T: 'static+ControlAttr+Clone>(&mut self, attribute: T) {
         self.attributes.set(attribute);

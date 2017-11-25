@@ -1,3 +1,4 @@
+use super::super::control::*;
 use super::super::control_attribute::*;
 
 ///
@@ -6,4 +7,8 @@ use super::super::control_attribute::*;
 #[derive(Clone, PartialEq)]
 pub struct Id(pub String);
 
-impl ControlAttr for Id { }
+impl ControlAttr for Id {
+    fn matches_attribute_in_control(&self, control: &Control) -> bool {
+        Some(self) == control.get_attribute::<Self>()
+    }
+}
