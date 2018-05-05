@@ -106,7 +106,9 @@ mod test {
     use super::*;
     use super::super::*;
 
+    use futures::prelude::*;
     use futures::executor;
+    use futures::stream;
 
     use std::thread;
     use std::time::Duration;
@@ -131,17 +133,26 @@ mod test {
         assert!(stream.next() == Some(Ok(2)));
     }
 
-    /*
     #[test]
     fn stream_is_unready_after_first_read() {
+        use self::Async::*;
+
         let binding     = bind(1);
         let bind_ref    = BindRef::from(binding.clone());
-        let mut stream  = executor::spawn(follow(bind_ref));
+        let mut stream  = follow(bind_ref);
+        let mut stream  = stream::poll_fn(move |ctxt| match stream.poll_next(ctxt) {
+            Ok(Ready(Some(s)))  => Ok(Ready(Some(Ready(s.clone())))),
+            Ok(Ready(None))     => Ok(Ready(None)),
+            Ok(Pending)         => Ok(Ready(Some(Pending))),
+            Err(e)              => Err(e)
+        });
+        let mut stream  = executor::block_on_stream(stream);
 
-        assert!(stream.wait_stream() == Some(Ok(1)));
-        assert!(stream.poll_stream_notify(&NotifyHandle::from(&NotifyNothing), 1) == Ok(Async::NotReady));
+        assert!(stream.next() == Some(Ok(Ready(1))));
+        assert!(stream.next() == Some(Ok(Pending)));
     }
 
+    /*
     #[test]
     fn stream_is_immediate_ready_after_write() {
         let mut binding = bind(1);
