@@ -106,7 +106,6 @@ mod test {
     use super::*;
     use super::super::*;
 
-    use futures::prelude::*;
     use futures::executor;
     use futures::stream;
 
@@ -133,50 +132,60 @@ mod test {
         assert!(stream.next() == Some(Ok(2)));
     }
 
+    ///
+    /// Creates a non-blocking version of an existing stream (useful for tests where we need
+    /// to see if a stream will block or not)
+    /// 
+    fn nonblocking_stream<I, E, S: 'static+Stream<Item=I, Error=E>>(stream: S) -> Box<Stream<Item=Async<I>, Error=E>> {
+        use self::Async::*;
+
+        let mut stream = stream;
+        Box::new(stream::poll_fn(move |ctxt| match stream.poll_next(ctxt) {
+            Ok(Ready(Some(s)))  => Ok(Ready(Some(Ready(s)))),
+            Ok(Ready(None))     => Ok(Ready(None)),
+            Ok(Pending)         => Ok(Ready(Some(Pending))),
+            Err(e)              => Err(e)
+        }))
+    }
+
     #[test]
     fn stream_is_unready_after_first_read() {
         use self::Async::*;
 
         let binding     = bind(1);
         let bind_ref    = BindRef::from(binding.clone());
-        let mut stream  = follow(bind_ref);
-        let mut stream  = stream::poll_fn(move |ctxt| match stream.poll_next(ctxt) {
-            Ok(Ready(Some(s)))  => Ok(Ready(Some(Ready(s.clone())))),
-            Ok(Ready(None))     => Ok(Ready(None)),
-            Ok(Pending)         => Ok(Ready(Some(Pending))),
-            Err(e)              => Err(e)
-        });
+        let stream      = nonblocking_stream(follow(bind_ref));
         let mut stream  = executor::block_on_stream(stream);
 
         assert!(stream.next() == Some(Ok(Ready(1))));
         assert!(stream.next() == Some(Ok(Pending)));
     }
 
-    /*
     #[test]
     fn stream_is_immediate_ready_after_write() {
+        use self::Async::*;
+
         let mut binding = bind(1);
         let bind_ref    = BindRef::from(binding.clone());
-        let mut stream  = executor::spawn(follow(bind_ref));
+        let mut stream  = executor::block_on_stream(nonblocking_stream(follow(bind_ref)));
 
-        assert!(stream.wait_stream() == Some(Ok(1)));
+        assert!(stream.next() == Some(Ok(Ready(1))));
         binding.set(2);
-        assert!(stream.poll_stream_notify(&NotifyHandle::from(&NotifyNothing), 1) == Ok(Async::Ready(Some(2))));
+        assert!(stream.next() == Some(Ok(Ready(2))));
     }
 
     #[test]
     fn will_wake_when_binding_is_updated() {
         let mut binding = bind(1);
         let bind_ref    = BindRef::from(binding.clone());
-        let mut stream  = executor::spawn(follow(bind_ref));
+        let mut stream  = executor::block_on_stream(follow(bind_ref));
 
         thread::spawn(move || {
             thread::sleep(Duration::from_millis(100));
             binding.set(2);
         });
 
-        assert!(stream.wait_stream() == Some(Ok(1)));
-        assert!(stream.wait_stream() == Some(Ok(2)));
+        assert!(stream.next() == Some(Ok(1)));
+        assert!(stream.next() == Some(Ok(2)));
     }
-    */
 }
