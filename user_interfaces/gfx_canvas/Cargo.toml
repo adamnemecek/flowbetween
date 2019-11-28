@@ -1,0 +1,24 @@
+[package]
+name                = "flo_gfx_canvas"
+version             = "0.1.0"
+authors             = ["Andrew Hunter"]
+license             = "Apache-2.0"
+repository          = "https://github.com/Logicalshift/flowbetween"
+
+[features]
+metal               = ["gfx-backend-metal"]
+vulkan              = ["gfx-backend-vulkan"]
+gl                  = ["gfx-backend-gl"]
+wgl                 = ["gfx-backend-gl", "gfx-backend-gl/wgl"]
+dx11                = ["gfx-backend-dx11"]
+dx12                = ["gfx-backend-dx12"]
+
+[dependencies]
+flo_canvas          = { version = "^0.1.0", path="../../canvas" }
+gfx-hal             = { version = "0.4" }
+gfx-backend-gl      = { version = "0.4", optional = true }
+gfx-backend-metal   = { version = "0.4", optional = true }
+gfx-backend-vulkan  = { version = "0.4", optional = true }
+gfx-backend-dx11    = { version = "0.4", optional = true }
+gfx-backend-dx12    = { version = "0.4", optional = true }
+lyon                = "0.14"
