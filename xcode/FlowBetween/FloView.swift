@@ -41,6 +41,9 @@ public class FloView : NSObject, FloViewDelegate {
     /// The layer to draw on, if there is one
     fileprivate var _drawingLayer: FloCanvasLayer?;
     
+    /// The metal layer that's being drawn on, if there is one
+    fileprivate var _metalLayer: FloMetalLayer?;
+    
     override init() {
         _bounds = Bounds(
             x1: Position.Start,
@@ -665,6 +668,7 @@ public class FloView : NSObject, FloViewDelegate {
             
             // Regenerate the graphics context so that it's the appropriate size for the layer
             _drawingLayer?.setVisibleArea(bounds: newBounds, resolution: resolutionMultiplier);
+            _metalLayer?.setVisibleArea(bounds: newBounds, resolution: resolutionMultiplier);
             
             redisplayCanvasLayer();
         }
@@ -845,10 +849,61 @@ public class FloView : NSObject, FloViewDelegate {
     }
     
     ///
+    /// Creates the metal rendering layer for this view
+    ///
+    func createMetalDrawingLayer(_ events: FloEvents) {
+        // Create the layer
+        let layer       = FloMetalLayer();
+        
+        // Layer should not animate its contents
+        layer.actions = [
+            "onOrderIn":    NSNull(),
+            "onOrderOut":   NSNull(),
+            "sublayers":    NSNull(),
+            "contents":     NSNull(),
+            "bounds":       NSNull(),
+            "frame":        NSNull()
+        ];
+        
+        _metalLayer = layer;
+        
+        // Reset the layer size when the bounds change
+        weak var this = self;
+        var willChangeBounds = false;
+        _view.boundsChanged = { newBounds in
+            if !willChangeBounds {
+                willChangeBounds = true;
+                
+                RunLoop.main.perform(inModes: [RunLoop.Mode.default, RunLoop.Mode.eventTracking], block: {
+                    willChangeBounds = false;
+                    this?.drawingLayerBoundsChanged(newBounds);
+                });
+            }
+        }
+        
+        var initialSize = _view.layoutSize;
+        if initialSize.width < 1 { initialSize.width = 1 }
+        if initialSize.height < 1 { initialSize.height = 1 }
+        
+        layer.onRedraw              { (canvasSize, viewport) in events.redrawCanvas(with: canvasSize, viewport: viewport); }
+        layer.backgroundColor       = CGColor.clear;
+        layer.frame                 = CGRect(x: 0, y: 0, width: initialSize.width, height: initialSize.height);
+        layer.setNeedsDisplay();
+        
+        RunLoop.main.perform(inModes: [RunLoop.Mode.default, RunLoop.Mode.modalPanel, RunLoop.Mode.eventTracking], block: { self._view.setCanvasLayer(layer) });
+    }
+    
+    ///
     /// Retrieves the Metal device for this view
     ///
-    @objc public func viewGetMetalDevice() -> MTLDevice? {
-        return nil;
+    @objc public func viewGetMetalDevice(forDrawing events: FloEvents!) -> MTLDevice? {
+        // Create the layer if it doesn't already exist
+        if _metalLayer == nil {
+            createMetalDrawingLayer(events);
+        }
+        
+        // Return the device it uses
+        return _metalLayer?.device;
     }
     
     ///

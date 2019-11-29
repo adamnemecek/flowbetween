@@ -70,7 +70,7 @@ class FloCanvasLayer : CALayer {
     }
     
     ///
-    /// Draws this layer in response
+    /// Draws this layer in response to a request from the UI
     ///
     override func draw(in ctx: CGContext) {
         // Redraw the backing layer if it has been invalidated
