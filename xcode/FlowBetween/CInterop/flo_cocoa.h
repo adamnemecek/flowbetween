@@ -130,7 +130,6 @@ typedef struct AppPainting AppPainting;
 
 - (id<MTLDevice>) viewGetMetalDeviceForDrawing: (FloEvents*) events;
 - (id<MTLDrawable>) viewGetNextMetalDrawable;
-- (void) viewPresentMetalDrawable;
 - (CGContextRef) viewGetCanvasForDrawing: (FloEvents*) events layer: (uint32_t) layer_id;
 - (FloCacheLayer*) viewCopyLayerWithId: (uint32_t) layer_id;
 - (void) viewUpdateCache: (FloCacheLayer*) layer fromLayerWithId: (uint32_t) layer_id;
