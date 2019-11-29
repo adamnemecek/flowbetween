@@ -21,6 +21,7 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import <MetalKit/MetalKit.h>
 
 ///
 /// Data returned as part of a painting event
@@ -127,6 +128,9 @@ typedef struct AppPainting AppPainting;
 - (void) viewSetPopupSizeWithWidth: (double) width height: (double) height;
 - (void) viewSetPopupOffset: (double) offset;
 
+- (id<MTLDevice>) viewGetMetalDevice;
+- (id<MTLDrawable>) viewGetNextMetalDrawable;
+- (void) viewPresentMetalDrawable;
 - (CGContextRef) viewGetCanvasForDrawing: (FloEvents*) events layer: (uint32_t) layer_id;
 - (FloCacheLayer*) viewCopyLayerWithId: (uint32_t) layer_id;
 - (void) viewUpdateCache: (FloCacheLayer*) layer fromLayerWithId: (uint32_t) layer_id;

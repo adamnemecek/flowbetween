@@ -845,6 +845,27 @@ public class FloView : NSObject, FloViewDelegate {
     }
     
     ///
+    /// Retrieves the Metal device for this view
+    ///
+    @objc public func viewGetMetalDevice() -> MTLDevice? {
+        return nil;
+    }
+    
+    ///
+    /// Retrieves the next metal drawable for this view
+    ///
+    @objc public func viewGetNextMetalDrawable() -> MTLDrawable? {
+        return nil;
+    }
+
+    ///
+    /// Presents the drawable last returned by viewGetNextMetalDrawable in this view
+    ///
+    @objc public func viewPresentMetalDrawable() {
+        
+    }
+
+    ///
     /// Finds the FloView 'neares't to the specified view
     ///
     static func nearestTo(_ view: NSView) -> FloView? {
