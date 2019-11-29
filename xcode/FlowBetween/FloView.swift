@@ -910,14 +910,13 @@ public class FloView : NSObject, FloViewDelegate {
     /// Retrieves the next metal drawable for this view
     ///
     @objc public func viewGetNextMetalDrawable() -> MTLDrawable? {
-        return nil;
+        return _metalLayer?.nextDrawable();
     }
 
     ///
     /// Presents the drawable last returned by viewGetNextMetalDrawable in this view
     ///
     @objc public func viewPresentMetalDrawable() {
-        
     }
 
     ///
