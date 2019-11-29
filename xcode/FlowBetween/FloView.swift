@@ -634,11 +634,24 @@ public class FloView : NSObject, FloViewDelegate {
     }
     
     ///
+    /// Returns the currently active canvas layer (which must have been previously set)
+    ///
+    var activeCanvasLayer: CALayer {
+        get {
+            if let metalLayer = _metalLayer {
+                return metalLayer;
+            } else {
+                return _drawingLayer!;
+            }
+        }
+    }
+    
+    ///
     /// Updates the bounds of the drawing layer (and its context) after the view bounds change
     ///
     func drawingLayerBoundsChanged(_ newBounds: ContainerBounds) {
         autoreleasepool {
-            let layer = _drawingLayer!;
+            let layer = activeCanvasLayer;
             
             // Work out the screen resolution of the current window
             var resolutionMultiplier = CGFloat(1.0);

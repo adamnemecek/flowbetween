@@ -153,7 +153,7 @@ impl ActionsFrom<ViewAction> for Hint {
         use self::Hint::*;
 
         match self {
-            FastDrawing     => vec![],
+            FastDrawing     => vec![ViewAction::EnableGfxDrawing],
             Class(name)     => vec![ViewAction::SetState(ViewStateUpdate::AddClass(name.clone()))]
         }
     }

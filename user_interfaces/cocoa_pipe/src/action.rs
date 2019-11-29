@@ -153,6 +153,9 @@ pub enum ViewAction {
     /// Sets part of the state of this view
     SetState(ViewStateUpdate),
 
+    /// Switches from the Quartz canvas renderer to the rust-gfx/Metal renderer
+    EnableGfxDrawing,
+
     /// Performs an action that relates to a pop-up view
     Popup(ViewPopupAction)
 }

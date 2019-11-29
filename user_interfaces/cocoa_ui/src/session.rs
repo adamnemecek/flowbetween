@@ -347,6 +347,13 @@ impl CocoaSession {
                     SetHorizontalScrollBar(visibility)      => { let _: () = msg_send!(**view, viewSetHorizontalScrollVisibility: Self::scroll_visibility_value(visibility)); },
                     SetVerticalScrollBar(visibility)        => { let _: () = msg_send!(**view, viewSetVerticalScrollVisibility: Self::scroll_visibility_value(visibility)); },
 
+                    EnableFastDrawing                       => {
+                        let flo_events  = self.events_for_view(view_id);
+                        let view        = self.views.get(&view_id).unwrap();
+                        let new_canvas  = Self::create_metal_canvas(view, &flo_events);
+                        self.canvases.insert(view_id, new_canvas);
+                    }
+
                     Draw(canvas_actions)                    => { 
                         let view = view.clone();
                         self.draw(view_id, &view, canvas_actions); 
@@ -447,6 +454,23 @@ impl CocoaSession {
     }
 
     ///
+    /// Creates a metal canvas for this session
+    ///
+    fn create_metal_canvas(view: &StrongPtr, flo_events: &StrongPtr) -> CanvasView {
+        unsafe {
+            let flo_events          = flo_events.clone();
+            let view                = view.clone();
+
+            // Fetch the device from the view (forcing it to create the metal layer)
+            let device: *mut Object = msg_send!(*view, viewGetMetalDeviceForDrawing: *flo_events);
+            let device              = StrongPtr::new(device);
+
+            // Render the view
+            CanvasView::MetalCanvas(MetalCanvas::new())
+        }
+    }
+
+    ///
     /// Performs some drawing actions on the specified view
     ///
     fn draw(&mut self, view_id: usize, view: &StrongPtr, actions: Vec<Draw>) {
@@ -460,7 +484,7 @@ impl CocoaSession {
             // Perform the drawing actions (appropriate to the type of canvas we've created)
             match canvas {
                 CanvasView::QuartzCanvas(canvas)    => { Self::draw_quartz(flo_events, view, canvas, actions); }
-                CanvasView::MetalCanvas(canvas)     => { unimplemented!() }
+                CanvasView::MetalCanvas(canvas)     => { /* TODO */ }
             }
         }
     }
@@ -503,7 +527,7 @@ impl CocoaSession {
                 // Perform the drawing actions on the canvas
                 match canvas {
                     CanvasView::QuartzCanvas(canvas)    => { Self::redraw_quartz_canvas(flo_events, view, canvas, size, bounds); }
-                    CanvasView::MetalCanvas(canvas)     => { unimplemented!(); }
+                    CanvasView::MetalCanvas(canvas)     => { /* TODO */ }
                 }
             }
         }
