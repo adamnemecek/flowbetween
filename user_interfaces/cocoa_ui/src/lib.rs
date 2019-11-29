@@ -14,6 +14,7 @@ mod canvas_state;
 mod canvas_context;
 mod canvas_transform;
 mod view_canvas;
+mod metal_canvas;
 
 #[allow(dead_code)]
 mod core_graphics_ffi;

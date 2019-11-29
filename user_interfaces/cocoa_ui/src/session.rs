@@ -2,6 +2,7 @@ use super::event::*;
 use super::cocoa_ui::*;
 use super::property::*;
 use super::view_canvas::*;
+use super::metal_canvas::*;
 use super::core_graphics_ffi::*;
 
 use flo_ui::*;
@@ -29,6 +30,14 @@ extern {
 }
 
 ///
+/// Type of canvas used for a particular view
+///
+enum CanvasView {
+    QuartzCanvas(QuartzCanvas),
+    MetalCanvas(MetalCanvas)
+}
+
+///
 /// Basis class for a Cocoa session
 ///
 pub struct CocoaSession {
@@ -51,7 +60,7 @@ pub struct CocoaSession {
     viewmodels: HashMap<usize, StrongPtr>,
 
     /// Maps view IDs to their canvas states
-    canvases: HashMap<usize, ViewCanvas>,
+    canvases: HashMap<usize, CanvasView>,
 
     /// Publisher where we send the actions to
     action_publisher: Publisher<Vec<AppAction>>,
@@ -416,7 +425,7 @@ impl CocoaSession {
     ///
     /// Creates a view canvas for this session
     ///
-    fn create_view_canvas(view: &StrongPtr) -> ViewCanvas {
+    fn create_view_canvas(view: &StrongPtr) -> CanvasView {
         let view_src        = view.clone();
 
         let view            = view_src.clone();
@@ -434,7 +443,7 @@ impl CocoaSession {
         let view            = view_src.clone();
         let restore_layer   = move |layer_id, layer_obj: StrongPtr| { unsafe { let _: () = msg_send!(*view, viewRestoreLayerTo: layer_id fromCopy: *layer_obj); } };
 
-        ViewCanvas::new(clear_canvas, copy_layer, update_layer, restore_layer)
+        CanvasView::QuartzCanvas(QuartzCanvas::new(clear_canvas, copy_layer, update_layer, restore_layer))
     }
 
     ///
@@ -448,6 +457,19 @@ impl CocoaSession {
             // Fetch the canvas for this view
             let canvas = self.canvases.entry(view_id).or_insert_with(|| Self::create_view_canvas(view));
 
+            // Perform the drawing actions (appropriate to the type of canvas we've created)
+            match canvas {
+                CanvasView::QuartzCanvas(canvas)    => { Self::draw_quartz(flo_events, view, canvas, actions); }
+                CanvasView::MetalCanvas(canvas)     => { unimplemented!() }
+            }
+        }
+    }
+
+    ///
+    /// Draws on the specified quartz canvas
+    ///
+    fn draw_quartz(flo_events: StrongPtr, view: &StrongPtr, canvas: &mut QuartzCanvas, actions: Vec<Draw>) {
+        unsafe {
             canvas.draw(actions, move |layer_id| {
                 let graphics_context: CGContextRef = msg_send!(**view, viewGetCanvasForDrawing: *flo_events layer: layer_id);
 
@@ -479,21 +501,33 @@ impl CocoaSession {
                 let canvas  = self.canvases.entry(view_id).or_insert_with(|| Self::create_view_canvas(view));
 
                 // Perform the drawing actions on the canvas
-                canvas.set_viewport(size, bounds);
-                canvas.redraw(move |layer_id| {
-                    let graphics_context: CGContextRef = msg_send!(**view, viewGetCanvasForDrawing: *flo_events layer: layer_id);
-
-                    if graphics_context.is_null() {
-                        None
-                    } else {
-                        Some(CFRef::from(graphics_context.retain()))
-                    }
-                });
-
-                // Finished drawing
-                let _: () = msg_send!(**view, viewFinishedDrawing);
-                let _: () = msg_send!(**view, viewSetTransform: canvas.get_transform());
+                match canvas {
+                    CanvasView::QuartzCanvas(canvas)    => { Self::redraw_quartz_canvas(flo_events, view, canvas, size, bounds); }
+                    CanvasView::MetalCanvas(canvas)     => { unimplemented!(); }
+                }
             }
+        }
+    }
+
+    ///
+    /// Redrawing for a quartz canvas
+    ///
+    pub fn redraw_quartz_canvas(flo_events: StrongPtr, view: &StrongPtr, canvas: &mut QuartzCanvas, size: CGSize, bounds: CGRect) {
+        unsafe {
+            canvas.set_viewport(size, bounds);
+            canvas.redraw(move |layer_id| {
+                let graphics_context: CGContextRef = msg_send!(**view, viewGetCanvasForDrawing: *flo_events layer: layer_id);
+
+                if graphics_context.is_null() {
+                    None
+                } else {
+                    Some(CFRef::from(graphics_context.retain()))
+                }
+            });
+
+            // Finished drawing
+            let _: () = msg_send!(**view, viewFinishedDrawing);
+            let _: () = msg_send!(**view, viewSetTransform: canvas.get_transform());
         }
     }
 

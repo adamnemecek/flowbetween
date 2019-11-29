@@ -9,7 +9,7 @@ use objc::rc::*;
 ///
 /// Stores the state associated with a canvas specified for a view
 ///
-pub struct ViewCanvas {
+pub struct QuartzCanvas {
     /// A copy of the canvas for this view (used when we need to redraw the viewport)
     canvas: Canvas,
 
@@ -35,16 +35,16 @@ pub struct ViewCanvas {
     restore_layer: Box<dyn FnMut(u32, StrongPtr) -> ()>
 }
 
-impl ViewCanvas {
+impl QuartzCanvas {
     ///
     /// Creates a new canvas for a view
     ///
-    pub fn new<ClearCanvasFn, CopyLayerFn, UpdateLayerFn, RestoreLayerFn>(clear_canvas: ClearCanvasFn, copy_layer: CopyLayerFn, update_layer: UpdateLayerFn, restore_layer: RestoreLayerFn) -> ViewCanvas
+    pub fn new<ClearCanvasFn, CopyLayerFn, UpdateLayerFn, RestoreLayerFn>(clear_canvas: ClearCanvasFn, copy_layer: CopyLayerFn, update_layer: UpdateLayerFn, restore_layer: RestoreLayerFn) -> QuartzCanvas
     where   ClearCanvasFn:  'static+FnMut() -> (),
             CopyLayerFn:    'static+FnMut(u32) -> StrongPtr,
             UpdateLayerFn:  'static+FnMut(u32, StrongPtr) -> (),
             RestoreLayerFn: 'static+FnMut(u32, StrongPtr) -> () {
-        ViewCanvas {
+        QuartzCanvas {
             canvas:         Canvas::new(),
             size:           CGSize { width: 1.0, height: 1.0 },
             visible:        CGRect { origin: CGPoint { x: 0.0, y: 0.0 }, size: CGSize { width: 1.0, height: 1.0 } },
