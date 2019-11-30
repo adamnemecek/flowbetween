@@ -128,6 +128,7 @@ typedef struct AppPainting AppPainting;
 - (void) viewSetPopupSizeWithWidth: (double) width height: (double) height;
 - (void) viewSetPopupOffset: (double) offset;
 
+- (CAMetalLayer*) viewGetMetalLayerForDrawing: (FloEvents*) events;
 - (id<MTLDevice>) viewGetMetalDeviceForDrawing: (FloEvents*) events;
 - (id<MTLDrawable>) viewGetNextMetalDrawable;
 - (CGContextRef) viewGetCanvasForDrawing: (FloEvents*) events layer: (uint32_t) layer_id;

@@ -921,6 +921,19 @@ public class FloView : NSObject, FloViewDelegate {
     }
     
     ///
+    /// Retrieves the Metal layer for this view
+    ///
+    @objc public func viewGetMetalLayer(forDrawing events: FloEvents!) -> CAMetalLayer? {
+        // Create the layer if it doesn't already exist
+        if _metalLayer == nil {
+            createMetalDrawingLayer(events);
+        }
+        
+        // Return the device it uses
+        return _metalLayer;
+    }
+
+    ///
     /// Retrieves the Metal device for this view
     ///
     @objc public func viewGetMetalDevice(forDrawing events: FloEvents!) -> MTLDevice? {

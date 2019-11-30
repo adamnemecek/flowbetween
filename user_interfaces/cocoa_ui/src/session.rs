@@ -462,11 +462,11 @@ impl CocoaSession {
             let view                = view.clone();
 
             // Fetch the device from the view (forcing it to create the metal layer)
-            let device: *mut Object = msg_send!(*view, viewGetMetalDeviceForDrawing: *flo_events);
-            let device              = StrongPtr::retain(device);
+            let layer: *mut Object  = msg_send!(*view, viewGetMetalLayerForDrawing: *flo_events);
+            let layer               = StrongPtr::retain(layer);
 
             // Render the view
-            CanvasView::MetalCanvas(MetalCanvas::new(device))
+            CanvasView::MetalCanvas(MetalCanvas::new(layer))
         }
     }
 
