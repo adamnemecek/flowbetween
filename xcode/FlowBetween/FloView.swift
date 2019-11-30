@@ -8,6 +8,7 @@
 
 import Foundation
 import Cocoa
+import MetalKit
 
 ///
 /// Class used to manage a view in FlowBetween
@@ -43,6 +44,9 @@ public class FloView : NSObject, FloViewDelegate {
     
     /// The metal layer that's being drawn on, if there is one
     fileprivate var _metalLayer: FloMetalLayer?;
+    
+    /// The device that's assigned to metal layers associated with this view
+    fileprivate var _metalDevice: MTLDevice?;
     
     override init() {
         _bounds = Bounds(
@@ -865,8 +869,18 @@ public class FloView : NSObject, FloViewDelegate {
     /// Creates the metal rendering layer for this view
     ///
     func createMetalDrawingLayer(_ events: FloEvents) {
+        // Make sure the device is set up
+        if _metalDevice == nil {
+            _metalDevice = MTLCreateSystemDefaultDevice();
+        }
+        
         // Create the layer
         let layer       = FloMetalLayer();
+        
+        // Set up for rendering
+        layer.device            = _metalDevice!;
+        layer.pixelFormat       = .bgra8Unorm;
+        layer.framebufferOnly   = true;
         
         // Layer should not animate its contents
         layer.actions = [

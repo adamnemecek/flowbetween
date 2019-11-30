@@ -463,10 +463,10 @@ impl CocoaSession {
 
             // Fetch the device from the view (forcing it to create the metal layer)
             let device: *mut Object = msg_send!(*view, viewGetMetalDeviceForDrawing: *flo_events);
-            let device              = StrongPtr::new(device);
+            let device              = StrongPtr::retain(device);
 
             // Render the view
-            CanvasView::MetalCanvas(MetalCanvas::new())
+            CanvasView::MetalCanvas(MetalCanvas::new(device))
         }
     }
 
@@ -484,13 +484,13 @@ impl CocoaSession {
             // Perform the drawing actions (appropriate to the type of canvas we've created)
             match canvas {
                 CanvasView::QuartzCanvas(canvas)    => { Self::draw_quartz(flo_events, view, canvas, actions); }
-                CanvasView::MetalCanvas(canvas)     => { /* TODO */ }
+                CanvasView::MetalCanvas(canvas)     => { Self::draw_metal(view, canvas, actions); }
             }
         }
     }
 
     ///
-    /// Draws on the specified quartz canvas
+    /// Draws the specified set of actions on a quartz canvas
     ///
     fn draw_quartz(flo_events: StrongPtr, view: &StrongPtr, canvas: &mut QuartzCanvas, actions: Vec<Draw>) {
         unsafe {
@@ -511,6 +511,20 @@ impl CocoaSession {
     }
 
     ///
+    /// Draws the specified set of actions on a metal canvas
+    ///
+    fn draw_metal(view: &StrongPtr, canvas: &mut MetalCanvas, actions: Vec<Draw>) {
+        unsafe {
+            // Fetch the next drawable
+            let drawable: *mut Object   = msg_send!(**view, viewGetNextMetalDrawable);
+            let drawable                = StrongPtr::retain(drawable);
+            
+            // Tell the canvas to draw
+            canvas.draw_test_pattern(drawable);
+        }
+    }
+
+    ///
     /// Forces a canvas to be redrawn with a new size
     ///
     pub fn redraw_canvas_for_view(&mut self, view_id: usize, size: CGSize, bounds: CGRect) {
@@ -527,7 +541,7 @@ impl CocoaSession {
                 // Perform the drawing actions on the canvas
                 match canvas {
                     CanvasView::QuartzCanvas(canvas)    => { Self::redraw_quartz_canvas(flo_events, view, canvas, size, bounds); }
-                    CanvasView::MetalCanvas(canvas)     => { /* TODO */ }
+                    CanvasView::MetalCanvas(canvas)     => { Self::redraw_metal_canvas(view, canvas, size, bounds); }
                 }
             }
         }
@@ -552,6 +566,20 @@ impl CocoaSession {
             // Finished drawing
             let _: () = msg_send!(**view, viewFinishedDrawing);
             let _: () = msg_send!(**view, viewSetTransform: canvas.get_transform());
+        }
+    }
+
+    ///
+    /// Redrawing for a metal canvas
+    ///
+    pub fn redraw_metal_canvas(view: &StrongPtr, canvas: &mut MetalCanvas, size: CGSize, bounds: CGRect) {
+        unsafe {
+            // Fetch the next drawable
+            let drawable: *mut Object   = msg_send!(**view, viewGetNextMetalDrawable);
+            let drawable                = StrongPtr::retain(drawable);
+            
+            // Tell the canvas to draw
+            canvas.draw_test_pattern(drawable);
         }
     }
 

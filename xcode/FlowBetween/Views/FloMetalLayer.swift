@@ -28,8 +28,13 @@ class FloMetalLayer : CAMetalLayer {
     ///
     func setVisibleArea(bounds: ContainerBounds, resolution: CGFloat) {
         autoreleasepool {
+            // Update the scale
             contentsScale       = resolution;
             
+            // Trigger a redraw so the display is up to date
+            _triggerRedraw?(bounds.totalSize, bounds.visibleRect);
+
+            // Cause a redisplay
             CATransaction.begin();
             CATransaction.setAnimationDuration(0.0);
             CATransaction.disableActions();
